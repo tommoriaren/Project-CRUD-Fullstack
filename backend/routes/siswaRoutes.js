@@ -4,6 +4,7 @@ const siswaController = require('../controllers/siswaController');
 
 // Mapping URL ke fungsi Controller
 router.get('/', siswaController.getAllSiswa);
+router.get('/next-kode', siswaController.getNextKode);
 router.get('/:id', siswaController.getSiswaById);
 router.post('/', siswaController.createSiswa);
 router.put('/:id', siswaController.updateSiswa);

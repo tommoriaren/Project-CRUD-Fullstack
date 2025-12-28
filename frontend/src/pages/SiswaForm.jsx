@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'; // Menghapus import React jika Vite/ESLint protes
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -12,21 +12,37 @@ const SiswaForm = () => {
     const navigate = useNavigate();
     const { id } = useParams();
 
+    // Mengambil URL dasar dari environment variable
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
     useEffect(() => {
         if (id) {
             getSiswaById();
+        } else {
+            // Panggil fungsi ini jika sedang mode TAMBAH
+            fetchNextKode();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
+    // FUNGSI BARU: Mengambil kode otomatis dari backend
+    const fetchNextKode = async () => {
+        try {
+            const response = await axios.get(`${API_URL}/siswa/next-kode`);
+            setKodeSiswa(response.data.nextKode);
+        } catch (error) {
+            console.error("Gagal mengambil kode otomatis:", error);
+            setKodeSiswa("ERR-01"); // Fallback jika backend mati
+        }
+    };
+
     const getSiswaById = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/siswa/${id}`);
+            const response = await axios.get(`${API_URL}/siswa/${id}`);
             setKodeSiswa(response.data.kode_siswa);
             setNamaSiswa(response.data.nama_siswa);
             setAlamatSiswa(response.data.alamat_siswa);
             
-            // Perbaikan parsing tanggal agar aman dari error undefined
             if (response.data.tanggal_siswa) {
                 const formattedDate = response.data.tanggal_siswa.split('T')[0];
                 setTanggalSiswa(formattedDate);
@@ -41,7 +57,7 @@ const SiswaForm = () => {
     const saveSiswa = async (e) => {
         e.preventDefault();
         const dataSiswa = {
-            kode_siswa: kodeSiswa,
+            kode_siswa: kodeSiswa, // Mengirim kode yang sudah ter-generate
             nama_siswa: namaSiswa,
             alamat_siswa: alamatSiswa,
             tanggal_siswa: tanggalSiswa,
@@ -49,16 +65,13 @@ const SiswaForm = () => {
         };
         try {
             if (id) {
-                await axios.put(`http://localhost:5000/api/siswa/${id}`, dataSiswa);
+                await axios.put(`${API_URL}/siswa/${id}`, dataSiswa);
             } else {
-                await axios.post('http://localhost:5000/api/siswa', dataSiswa);
+                await axios.post(`${API_URL}/siswa`, dataSiswa);
             }
             navigate('/siswa');
         } catch (error) {
-            // 1. Lihat detail di console (F12 di browser -> tab Console)
             console.log("Full Error Object:", error.response);
-
-            // 2. Tampilkan pesan error spesifik dari backend jika ada
             const msg = error.response?.data?.message || "Terjadi kesalahan pada server";
             alert(msg);
         }
@@ -70,30 +83,42 @@ const SiswaForm = () => {
             <hr />
             <form onSubmit={saveSiswa} style={{ marginTop: "20px" }}>
                 <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold" }}>Kode Siswa</label>
+                    <label style={{ display: "block", fontWeight: "bold", marginBottom: "5px" }}>Kode Siswa</label>
                     <input 
                         type="text" 
+                        // Sekarang value selalu menampilkan kodeSiswa (angka atau S000x)
                         value={kodeSiswa} 
-                        onChange={(e) => setKodeSiswa(e.target.value)} 
-                        required
-                        readOnly={!!id}
-                        style={{ width: "100%", padding: "8px", marginTop: "5px", boxSizing: "border-box" }} 
-                        placeholder="Contoh: S0001"
+                        readOnly 
+                        style={{ 
+                            width: "100%", 
+                            padding: "8px", 
+                            backgroundColor: "#e9ecef", 
+                            cursor: "not-allowed",
+                            border: "1px solid #ced4da",
+                            borderRadius: "4px",
+                            boxSizing: "border-box",
+                            fontWeight: "bold"
+                        }}
                     />
-                    {id && <small style={{ color: "gray" }}>*Kode siswa tidak dapat diubah.</small>}
+                    <small style={{ color: "gray" }}>
+                        {id ? "*Kode siswa tidak dapat diubah." : "*Kode ini dibuat otomatis oleh sistem."}
+                    </small>
                 </div>
+
                 <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold" }}>Nama Siswa</label>
+                    <label style={{ display: "block", fontWeight: "bold" }}>Nama Siswa</label>
                     <input 
                         type="text" 
                         value={namaSiswa} 
                         onChange={(e) => setNamaSiswa(e.target.value)} 
+                        placeholder="Masukkan nama lengkap"
                         required 
                         style={{ width: "100%", padding: "8px", marginTop: "5px", boxSizing: "border-box" }} 
                     />
                 </div>
+
                 <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold" }}>Alamat</label>
+                    <label style={{ display: "block", fontWeight: "bold" }}>Alamat</label>
                     <textarea 
                         value={alamatSiswa} 
                         onChange={(e) => setAlamatSiswa(e.target.value)} 
@@ -101,8 +126,9 @@ const SiswaForm = () => {
                         style={{ width: "100%", padding: "8px", marginTop: "5px", boxSizing: "border-box", height: "80px" }} 
                     />
                 </div>
+
                 <div style={{ marginBottom: "15px" }}>
-                    <label style={{ fontWeight: "bold" }}>Tanggal Lahir</label>
+                    <label style={{ display: "block", fontWeight: "bold" }}>Tanggal Lahir</label>
                     <input 
                         type="date" 
                         value={tanggalSiswa} 
@@ -111,8 +137,9 @@ const SiswaForm = () => {
                         style={{ width: "100%", padding: "8px", marginTop: "5px", boxSizing: "border-box" }} 
                     />
                 </div>
+
                 <div style={{ marginBottom: "20px" }}>
-                    <label style={{ fontWeight: "bold" }}>Jurusan</label>
+                    <label style={{ display: "block", fontWeight: "bold" }}>Jurusan</label>
                     <select 
                         value={jurusanSiswa} 
                         onChange={(e) => setJurusanSiswa(e.target.value)} 
@@ -126,14 +153,15 @@ const SiswaForm = () => {
                     </select>
                 </div>
                 
-                <div style={{ display: "flex", gap: "10px" }}>
+                <div style={{ display: "flex", gap: "10px", paddingBottom: "50px" }}>
                     <button type="submit" style={{ 
                         padding: "10px 20px", 
                         backgroundColor: "#007bff", 
                         color: "white", 
                         border: "none", 
                         borderRadius: "4px",
-                        cursor: "pointer" 
+                        cursor: "pointer",
+                        fontWeight: "bold"
                     }}>
                         {id ? "Update Data" : "Simpan Data"}
                     </button>

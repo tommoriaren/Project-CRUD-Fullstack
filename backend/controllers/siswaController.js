@@ -19,26 +19,55 @@ exports.getSiswaById = (req, res) => {
     });
 };
 
-// Handler untuk menambah siswa
-exports.createSiswa = (req, res) => {
-    // 1. Ambil urutan terakhir untuk membuat kode otomatis
-    db.query('SELECT COUNT(*) AS total FROM siswa', (err, results) => {
+// 1. Fungsi untuk generate kode otomatis (Tampilan di Form Tambah)
+exports.getNextKode = (_, res) => {
+    // Mencari kode_siswa dengan angka tertinggi
+    db.query('SELECT kode_siswa FROM siswa ORDER BY kode_siswa DESC LIMIT 1', (err, results) => {
         if (err) return res.status(500).json({ message: err.message });
 
-        const nextNumber = results[0].total + 1;
-        // Format: S + angka yang dipad dengan 0 sampai 4 digit (S0001, S0002, dst)
+        let nextNumber = 1;
+        if (results.length > 0) {
+            // Mengambil angka dari "S0009" -> 9, lalu ditambah 1
+            const lastKode = results[0].kode_siswa; 
+            const lastNumber = parseInt(lastKode.substring(1)); 
+            nextNumber = lastNumber + 1;
+        }
+
+        const nextKode = "S" + nextNumber.toString().padStart(4, '0');
+        res.json({ nextKode });
+    });
+};
+
+// 2. Fungsi Simpan Data (Create)
+exports.createSiswa = (req, res) => {
+    // Kita jalankan ulang logika cari kode terbesar agar data benar-benar presisi saat disimpan
+    db.query('SELECT kode_siswa FROM siswa ORDER BY kode_siswa DESC LIMIT 1', (err, results) => {
+        if (err) return res.status(500).json({ message: err.message });
+
+        let nextNumber = 1;
+        if (results.length > 0) {
+            const lastKode = results[0].kode_siswa;
+            const lastNumber = parseInt(lastKode.substring(1));
+            nextNumber = lastNumber + 1;
+        }
+
         const generatedKode = "S" + nextNumber.toString().padStart(4, '0');
 
-        // 2. Masukkan ke req.body agar model bisa menyimpannya
+        // Masukkan kode yang baru digenerate ke dalam objek data
         const dataBaru = {
             ...req.body,
             kode_siswa: generatedKode
         };
 
-        // 3. Jalankan model create
+        // Simpan ke database melalui Model
         siswaModel.create(dataBaru, (err, results) => {
-            if (err) return res.status(500).json({ message: err.message });
-            res.status(201).json({ message: `Siswa berhasil ditambahkan dengan kode ${generatedKode}` });
+            if (err) {
+                // Jika masih error (misal karena user lain input di saat bersamaan)
+                return res.status(500).json({ message: "Gagal simpan: " + err.message });
+            }
+            res.status(201).json({ 
+                message: `Siswa berhasil ditambahkan dengan kode ${generatedKode}` 
+            });
         });
     });
 };
