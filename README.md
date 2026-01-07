@@ -25,7 +25,6 @@ Aplikasi berbasis web untuk manajemen data siswa yang mengimplementasikan operas
 ---
 
 ## 📂 Struktur Proyek
-```text
 .
 ├── backend/
 │   ├── config/          # Konfigurasi koneksi MySQL
@@ -43,18 +42,15 @@ Aplikasi berbasis web untuk manajemen data siswa yang mengimplementasikan operas
     ├── .env             # URL API Backend
     └── package.json
 
-📝 Catatan Penting untuk Penguji
+---
+
+📝 Catatan Penting
 Integrasi API: Komunikasi data menggunakan Axios dengan penanganan asinkron (Async/Await).
-
 Validasi Kode: Sistem secara otomatis mengambil kode terakhir dari database dan menambahkannya 1 (Increment) saat form "Tambah Baru" dibuka.
-
 Penanganan Error: Terdapat kode ERR-01 jika frontend gagal terhubung ke backend, sebagai bentuk Error Handling.
 
 👨‍💻 Informasi Pengembang
 Nama: Tommy Oktoriyan Ketaren
-
 Asal Lembaga: BBPVP Bekasi
-
 Kejuruan: TIK (Pengembangan Web dengan Nodejs dan React NB5)
-
 Tahun: 2025/2026
